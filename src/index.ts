@@ -99,6 +99,21 @@ app.post('/api/auth/login', async (req: express.Request, res: express.Response) 
   res.json({ user: { id: user.id, email: user.email, fullName: user.fullName } });
 });
 
+app.get('/api/auth/me', async (req: express.Request, res: express.Response) => {
+  const token = req.cookies?.renderdx_session as string | undefined;
+  if (!token) return res.json({ user: null });
+  try {
+    const payload = jwt.verify(token, JWT_SECRET_VALUE) as any;
+    const userId = payload?.sub as string | undefined;
+    if (!userId) return res.json({ user: null });
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, email: true, fullName: true } });
+    if (!user) return res.json({ user: null });
+    res.json({ user });
+  } catch (err) {
+    res.json({ user: null });
+  }
+});
+
 app.get('/api/health', (_req: express.Request, res: express.Response) => {
   res.json({ ok: true });
 });
